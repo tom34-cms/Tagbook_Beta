@@ -1,1 +1,277 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>TAGBOOK</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#e6e6e8;color:#111;font:14px/1.45 Pretendard,-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#app{max-width:480px;margin:0 auto;min-height:100dvh;background:#fafafa;padding:calc(52px + env(safe-area-inset-top)) 0 calc(64px + env(safe-area-inset-bottom))}
+#hd,#nav{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:5;background:rgba(250,250,250,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#hd{top:0;height:calc(52px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 16px 0;display:flex;align-items:center;justify-content:space-between}
+.t{display:flex;align-items:center;gap:8px;font:600 20px 'Noto Serif KR',Georgia,serif}
+.t button{font-size:inherit}
+#nav{bottom:0;display:flex;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid #0001}
+#nav button{flex:1;height:56px;color:#9a9a9f}
+#nav .on{color:#111;font-weight:700}
+.wk,.cal{display:grid;grid-template-columns:repeat(7,1fr)}
+.wk span{text-align:center;color:#9a9a9f;font-size:11px;padding:6px 0}
+.cal{gap:1px;background:#e6e6e8}
+.cal i{background:#fafafa}
+.cal i,.day{aspect-ratio:3/4}
+.day{background:#fff center/cover;text-align:left;vertical-align:top;padding:4px 5px}
+.day b{font-size:12px;font-weight:600}
+.day.has b{color:#fff;text-shadow:0 0 4px #0009}
+.day.today b{text-decoration:underline}
+.lg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.lg button{aspect-ratio:3/4;background:#ececee center/cover;position:relative}
+.lg b{position:absolute;left:5px;bottom:4px;color:#fff;font-size:11px;text-shadow:0 0 4px #000a}
+.sr{margin:8px 16px;display:flex;align-items:center;border-radius:99px;background:#efeff1;padding:0 14px;height:34px}
+.sr input{flex:1;border:0;background:none;font:inherit;outline:0}
+.cs{display:flex;gap:6px;overflow-x:auto;padding:4px 16px}
+.cs button{white-space:nowrap;padding:5px 12px;border-radius:99px;background:#efeff1;font-size:13px}
+.cs .on{background:#111;color:#fff}
+.cn{padding:6px 16px 0;color:#8a8a8e;font-size:12px}
+#grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 10px;padding:10px 16px}
+.it{text-align:left;position:relative;display:flex;flex-direction:column;min-width:0}
+.it img,.nop{width:100%;aspect-ratio:1;object-fit:cover;background:#ececee}
+.wc{position:absolute;top:6px;right:6px;background:#fffc;border-radius:99px;font-size:11px;padding:1px 8px}
+.it b{margin-top:6px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it span{color:#77777c;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.em{padding:60px 24px;text-align:center;color:#8a8a8e}
+.fab{position:fixed;right:max(16px,calc(50% - 224px));bottom:calc(72px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;background:#111;color:#fff;font-size:24px}
+.ov{position:fixed;inset:0;background:#0006;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sh{width:100%;max-width:480px;max-height:92dvh;overflow:auto;background:#fafafa;border-radius:14px 14px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.hd2{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sh input,.sh textarea,.sh select{width:100%;border:1px solid #dcdce0;background:#fff;border-radius:8px;padding:10px;font:inherit;margin-bottom:8px}
+.ph{display:grid;place-items:center;aspect-ratio:3/4;max-height:44dvh;background:#ececee;color:#8a8a8e;overflow:hidden;margin-bottom:10px;border-radius:4px}
+.ph img{width:100%;height:100%;object-fit:cover}
+.lb{color:#8a8a8e;font-size:12px;margin:4px 0 6px}
+.chips{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px}
+.th{width:64px;flex:none;font-size:11px;opacity:.45;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.th.on{opacity:1}
+.th img{width:64px;height:64px;object-fit:cover;background:#ececee;display:block}
+.th.on img{outline:2px solid #111}
+.row{display:flex;gap:8px}
+.row button,.btn{flex:1;padding:12px;border-radius:10px;background:#ececee;text-align:center;cursor:pointer}
+.row .pri{background:#111;color:#fff}
+.note{color:#6c6c71;font-size:13px;margin:0 0 12px}
+</style>
+</head>
+<body>
+<div id="app"><header id="hd"></header><main id="main"></main><nav id="nav"></nav></div>
+<div id="modal"></div>
+<script>
+const APP_VER=1, DATA_V=1;
+// 오류 자동 리포트를 받을 주소(예: Google Apps Script 웹앱 URL). 비워두면 전송하지 않아요.
+const REPORT_URL='';
+const CATS=['신발','상의','아우터','하의','가방','모자','악세서리','기타'];
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const S={tab:'cal',d:new Date(),outfits:[],items:[],q:'',cat:''};
+let db,cur;
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const ds=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; // 로컬 시간 기준
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+/* ---------- 오류 리포트: 오류 종류와 기기 정보만 익명 전송 ---------- */
+function rep(m,src,l){
+  if(!REPORT_URL)return;
+  try{navigator.sendBeacon(REPORT_URL,JSON.stringify({v:APP_VER,m:String(m).slice(0,200),src:String(src||'').slice(-60),l,ua:navigator.userAgent.slice(0,120),t:Date.now()}))}catch(e){}
+}
+addEventListener('error',e=>rep(e.message,e.filename,e.lineno));
+addEventListener('unhandledrejection',e=>rep(e.reason&&e.reason.message||e.reason));
+
+/* ---------- 저장소 (IndexedDB, 이 기기 안에만 저장) ---------- */
+const openDB=()=>new Promise((res,rej)=>{
+  const r=indexedDB.open('TagbookBetaDB',1);
+  r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('outfits',{keyPath:'id'});d.createObjectStore('items',{keyPath:'id'})};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
+});
+const getAll=st=>new Promise((res,rej)=>{const r=db.transaction(st).objectStore(st).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const put=(st,v)=>new Promise((res,rej)=>{const t=db.transaction(st,'readwrite');t.objectStore(st).put(v);t.oncomplete=res;t.onerror=()=>rej(t.error)});
+const del=(st,id)=>new Promise((res,rej)=>{const t=db.transaction(st,'readwrite');t.objectStore(st).delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error)});
+async function load(){
+  S.outfits=(await getAll('outfits')).sort((a,b)=>b.date.localeCompare(a.date));
+  S.items=await getAll('items');
+}
+// 데이터 구조가 바뀌면 여기서 이전 버전 백업을 자동 변환해요.
+function migrate(d){if(!d.v)d.v=1;return d}
+const FAIL='저장하지 못했어요. 저장 공간이 부족할 수 있어요. 설정에서 백업 파일을 저장한 뒤 다시 시도해 주세요.';
+
+/* ---------- 사진 압축 ---------- */
+const shrink=(file,max,q)=>new Promise((res,rej)=>{
+  const u=URL.createObjectURL(file),i=new Image();
+  i.onload=()=>{
+    const k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');
+    c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);
+    c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+    URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',q));
+  };
+  i.onerror=()=>rej(new Error('사진을 읽지 못했어요'));
+  i.src=u;
+});
+async function pick(el){
+  const f=el.files[0];if(!f)return;
+  try{
+    cur.photo=await shrink(f,1280,.82);cur.thumb=await shrink(f,320,.7);
+    let im=$('#ph img');
+    if(!im){im=new Image();$('#ph').prepend(im);$('#ph span')?.remove()}
+    im.src=cur.photo;
+  }catch(e){alert('사진을 불러오지 못했어요. 다른 사진으로 다시 시도해 주세요.')}
+}
+
+/* ---------- 화면 ---------- */
+const sheet=h=>{$('#modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeSheet()"><div class="sh">${h}</div></div>`};
+const closeSheet=()=>{$('#modal').innerHTML=''};
+const go=t=>{S.tab=t;render();scrollTo(0,0)};
+const mv=n=>{S.d=new Date(S.d.getFullYear(),S.d.getMonth()+n,1);render()};
+
+function render(){
+  const t=S.tab;
+  $('#hd').innerHTML=(t==='cal'
+    ?`<div class="t"><button onclick="mv(-1)" aria-label="이전 달">‹</button><button onclick="pickMonth()">${MON[S.d.getMonth()]} ⌄</button><button onclick="mv(1)" aria-label="다음 달">›</button></div>`
+    :`<div class="t">${t==='log'?'LIFE LOG':'ITEM'}</div>`)
+    +`<button onclick="settings()" aria-label="설정">⚙︎</button>`;
+  $('#nav').innerHTML=[['cal','캘린더'],['log','갤러리'],['itm','아이템']].map(([k,n])=>`<button class="${t===k?'on':''}" onclick="go('${k}')">${n}</button>`).join('');
+  $('#main').innerHTML=t==='cal'?cal():t==='log'?log():itm();
+  if(t==='itm')grid();
+}
+
+function cal(){
+  const y=S.d.getFullYear(),m=S.d.getMonth(),first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate(),map={},today=ds(new Date());
+  S.outfits.forEach(o=>map[o.date]=o);
+  let h='<div class="wk">'+[...'일월화수목금토'].map(d=>`<span>${d}</span>`).join('')+'</div><div class="cal">';
+  for(let i=0;i<first;i++)h+='<i></i>';
+  for(let d=1;d<=n;d++){
+    const k=`${y}-${pad(m+1)}-${pad(d)}`,o=map[k];
+    h+=`<button class="day${o?' has':''}${k===today?' today':''}"${o?` style="background-image:url(${o.thumb||o.photo})"`:''} onclick="outfitSheet('${k}')"><b>${d}</b></button>`;
+  }
+  return h+'</div>';
+}
+
+function log(){
+  if(!S.outfits.length)return '<p class="em">캘린더에서 날짜를 눌러 첫 코디를 기록해 보세요.</p>';
+  return `<p class="cn">코디 ${S.outfits.length}개</p><div class="lg" style="margin-top:8px">`+S.outfits.map(o=>`<button style="background-image:url(${o.thumb||o.photo})" onclick="outfitSheet('${o.date}')"><b>${o.date.slice(2).replace(/-/g,'.')}</b></button>`).join('')+'</div>';
+}
+
+function itm(){
+  return `<div class="sr"><input id="q" placeholder="브랜드·제품명 검색" value="${esc(S.q)}" oninput="S.q=this.value;grid()"></div>
+  <div class="cs">${['',...CATS].map(c=>`<button class="${S.cat===c?'on':''}" onclick="S.cat='${c}';render()">${c||'전체'}</button>`).join('')}</div>
+  <p class="cn" id="cnt"></p><div id="grid"></div><button class="fab" onclick="itemSheet()" aria-label="아이템 추가">+</button>`;
+}
+function grid(){
+  const q=S.q.trim().toLowerCase(),w={};
+  S.outfits.forEach(o=>o.itemIds.forEach(i=>w[i]=(w[i]||0)+1));
+  const L=S.items.filter(i=>(!S.cat||i.cat===S.cat)&&(!q||`${i.brand} ${i.name}`.toLowerCase().split(/\s+/).some(x=>x.startsWith(q)))).sort((a,b)=>b.created-a.created);
+  $('#cnt').textContent=`${L.length}개`;
+  $('#grid').innerHTML=L.map(i=>`<button class="it" onclick="itemSheet('${i.id}')">${i.thumb?`<img src="${i.thumb}" alt="">`:'<div class="nop"></div>'}<em class="wc" style="font-style:normal">${w[i.id]||0}회</em><b>${esc(i.brand)||'&nbsp;'}</b><span>${esc(i.name)}</span></button>`).join('')
+    ||`<p class="em" style="grid-column:1/-1">${S.items.length?'검색 결과가 없어요':'+ 버튼으로 첫 아이템을 등록해 보세요.'}</p>`;
+}
+
+/* ---------- 코디 ---------- */
+function outfitSheet(k){
+  const o=S.outfits.find(x=>x.date===k);
+  cur={date:k,photo:o?.photo||'',thumb:o?.thumb||'',memo:o?.memo||'',itemIds:[...(o?.itemIds||[])],isNew:!o};
+  sheet(`<div class="hd2"><b>${k}</b><button onclick="closeSheet()">닫기</button></div>
+  <label class="ph" id="ph">${cur.photo?`<img src="${cur.photo}" alt="">`:'<span>+ 코디 사진 추가</span>'}<input type="file" accept="image/*" hidden onchange="pick(this)"></label>
+  <textarea rows="2" placeholder="메모" oninput="cur.memo=this.value">${esc(cur.memo)}</textarea>
+  <p class="lb">입은 아이템</p>
+  <div class="chips">${S.items.map(i=>`<button class="th${cur.itemIds.includes(i.id)?' on':''}" onclick="tg(this,'${i.id}')">${i.thumb?`<img src="${i.thumb}" alt="">`:'<div class="nop" style="width:64px;height:64px"></div>'}${esc(i.brand||i.name)}</button>`).join('')||'<span class="note">아이템 탭에서 옷을 먼저 등록하면 여기서 고를 수 있어요.</span>'}</div>
+  <div class="row"><button class="pri" onclick="saveOutfit()">저장</button>${cur.isNew?'':'<button onclick="delOutfit()">삭제</button>'}</div>`);
+}
+function tg(el,id){
+  const i=cur.itemIds.indexOf(id);
+  i<0?cur.itemIds.push(id):cur.itemIds.splice(i,1);
+  el.classList.toggle('on',i<0);
+}
+async function saveOutfit(){
+  if(!cur.photo)return alert('코디 사진을 먼저 추가해 주세요.');
+  try{
+    await put('outfits',{id:cur.date,date:cur.date,photo:cur.photo,thumb:cur.thumb,memo:cur.memo,itemIds:cur.itemIds});
+    await load();closeSheet();render();
+  }catch(e){alert(FAIL);rep(e&&e.message)}
+}
+async function delOutfit(){
+  if(!confirm('이 날의 코디 기록을 삭제할까요?'))return;
+  try{await del('outfits',cur.date);await load();closeSheet();render()}catch(e){alert('삭제하지 못했어요. 다시 시도해 주세요.')}
+}
+
+/* ---------- 아이템 ---------- */
+function itemSheet(id){
+  const i=S.items.find(x=>x.id===id),w=i?S.outfits.filter(o=>o.itemIds.includes(id)).length:0;
+  cur={id:i?.id||uid(),photo:i?.photo||'',thumb:i?.thumb||'',created:i?.created||Date.now(),isNew:!i};
+  sheet(`<div class="hd2"><b>${i?`${w}회 착용`:'새 아이템'}</b><button onclick="closeSheet()">닫기</button></div>
+  <label class="ph" id="ph" style="aspect-ratio:1">${cur.photo?`<img src="${cur.photo}" alt="">`:'<span>+ 아이템 사진 추가</span>'}<input type="file" accept="image/*" hidden onchange="pick(this)"></label>
+  <input id="f_brand" placeholder="브랜드" value="${esc(i?.brand)}">
+  <input id="f_name" placeholder="제품명" value="${esc(i?.name)}">
+  <select id="f_cat">${CATS.map(c=>`<option${i?.cat===c?' selected':''}>${c}</option>`).join('')}</select>
+  <input id="f_size" placeholder="사이즈" value="${esc(i?.size)}">
+  <textarea id="f_note" rows="2" placeholder="노트 (실측, 사이즈감 등)">${esc(i?.note)}</textarea>
+  <div class="row"><button class="pri" onclick="saveItem()">저장</button>${cur.isNew?'':'<button onclick="delItem()">삭제</button>'}</div>`);
+}
+async function saveItem(){
+  const v=k=>$('#f_'+k).value.trim();
+  if(!v('brand')&&!v('name'))return alert('브랜드나 제품명 중 하나는 입력해 주세요.');
+  try{
+    await put('items',{id:cur.id,photo:cur.photo,thumb:cur.thumb,created:cur.created,brand:v('brand'),name:v('name'),cat:v('cat'),size:v('size'),note:v('note')});
+    await load();closeSheet();render();
+  }catch(e){alert(FAIL);rep(e&&e.message)}
+}
+async function delItem(){
+  if(!confirm('이 아이템을 삭제할까요? 코디 기록의 사진은 그대로 남아요.'))return;
+  try{
+    await del('items',cur.id);
+    for(const o of S.outfits.filter(o=>o.itemIds.includes(cur.id)))await put('outfits',{...o,itemIds:o.itemIds.filter(x=>x!==cur.id)});
+    await load();closeSheet();render();
+  }catch(e){alert('삭제하지 못했어요. 다시 시도해 주세요.')}
+}
+
+/* ---------- 월 이동 · 설정 · 백업 ---------- */
+function pickMonth(){
+  sheet(`<div class="hd2"><b>이동할 달</b><button onclick="closeSheet()">닫기</button></div>
+  <input type="month" value="${S.d.getFullYear()}-${pad(S.d.getMonth()+1)}" onchange="const p=this.value.split('-');if(p[0]){S.d=new Date(+p[0],p[1]-1,1);closeSheet();render()}">`);
+}
+async function settings(){
+  let u='';
+  try{const e=await navigator.storage.estimate();u=`저장 공간 사용량 ${(e.usage/1048576).toFixed(1)}MB`}catch(e){}
+  sheet(`<div class="hd2"><b>설정</b><button onclick="closeSheet()">닫기</button></div>
+  <p class="note">모든 기록은 이 기기의 브라우저에만 저장돼요. 개발자는 사진이나 옷 정보를 볼 수 없어요. 기기를 바꾸거나 브라우저 데이터를 지우면 기록이 사라지니, 가끔 백업 파일을 저장해 주세요.</p>
+  <div class="row"><button class="pri" onclick="exportData()">백업 파일 저장</button><label class="btn">백업 불러오기<input type="file" accept=".json,application/json" hidden onchange="importData(this)"></label></div>
+  <p class="note" style="margin-top:12px">${u}</p>
+  ${REPORT_URL?'<p class="note">앱에 오류가 생기면 오류 종류와 기기 정보만 익명으로 전송돼요. 사진과 기록 내용은 전송되지 않아요.</p>':''}`);
+}
+function exportData(){
+  const b=new Blob([JSON.stringify({app:'tagbook-beta',v:DATA_V,outfits:S.outfits,items:S.items})],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`tagbook-backup-${ds(new Date())}.json`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+async function importData(el){
+  try{
+    const d=migrate(JSON.parse(await el.files[0].text()));
+    if(d.app!=='tagbook-beta')throw new Error('형식 오류');
+    for(const o of d.outfits)await put('outfits',o);
+    for(const i of d.items)await put('items',i);
+    await load();closeSheet();render();
+    alert(`불러왔어요. 코디 ${d.outfits.length}개, 아이템 ${d.items.length}개 (같은 항목은 덮어썼어요)`);
+  }catch(e){alert('백업 파일을 읽지 못했어요. 이 앱에서 저장한 .json 파일인지 확인해 주세요.')}
+}
+
+/* ---------- 시작 ---------- */
+(async()=>{
+  try{
+    db=await openDB();await load();
+    navigator.storage?.persist?.();
+    render();
+  }catch(e){
+    $('#main').innerHTML='<p class="em">이 브라우저에서는 저장소를 쓸 수 없어요. 사생활 보호 모드를 끄고 다시 열어 주세요.</p>';
+    rep(e&&e.message);
+  }
+})();
+</script>
+</body>
+</html>
